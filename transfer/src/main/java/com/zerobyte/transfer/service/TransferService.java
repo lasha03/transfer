@@ -10,9 +10,34 @@ import java.util.List;
 
 @Service
 public class TransferService {
-    public TransferResponse calculateCheapestRoute(TransferRequest request) {
+    public TransferResponse calculateCheapestRoute(TransferRequest request, List<Transfer> unusedTransfers) {
         List<Transfer> availableTransfers = request.getAvailableTransfers();
         int maxWeight = request.getMaxWeight();
+
+        List<Transfer> leftTransfers = new ArrayList<Tranfser>();
+
+        List<Tranfser> selectedTransfers = this.selectTransfers(availableTransfers, maxWeight);
+        int totalCost = 0;
+        int totalWeight = 0;
+
+        for (Tranfser curTransfer : selectedTransfers) {
+            totalCost += curTransfer.getCost();
+            totalWeight += curTransfer.getWeight();
+        }
+
+        if (selectedTransfers.size() < availableTransfers.size()) {
+            List<Tranfser> remeainingTranfsers = availableTransfers.stream().filter(x -> !selectedTransfers.contains(x)).toList();
+        } else {
+            if (maxWeight - totalWeight > 0) {
+                List<Transfer> oldTransfers = this.selectTransfers(unusedTransfers, maxWeight-totalWeight);
+                unusedTransfers = unusedTransfers.stream().filter(x -> !oldTransfers.contains(x));
+            }
+        }
+
+        return new TransferResponse(selectedTransfers, totalCost, totalWeight);
+    }
+
+    private List<Transfer> selectTransfers(List<Transfer> availableTransfers, int maxWeight){
         int numTransfers = availableTransfers.size();
 
         if (numTransfers == 0 || maxWeight <= 0) {
@@ -48,21 +73,25 @@ public class TransferService {
             }
         }
 
-        List<Transfer> selectedTransfers = new ArrayList<>();
         int remainingWeight = maxWeight;
-        int totalCost = dp[numTransfers][maxWeight];
-        int totalWeight = 0;
 
         for (int i = numTransfers; i > 0 && remainingWeight > 0; i--) {
+            Transfer currentTransfer = availableTransfers.get(i - 1);
             if (selected[i][remainingWeight]) {
-                Transfer currentTransfer = availableTransfers.get(i - 1);
                 selectedTransfers.add(currentTransfer);
                 remainingWeight -= currentTransfer.getWeight();
-                totalWeight += currentTransfer.getWeight();
+            } else {
+                leftTransfers.add(currentTransfer);
             }
         }
 
+
         Collections.reverse(selectedTransfers);
-        return new TransferResponse(selectedTransfers, totalCost, totalWeight);
+        return selectedTransfers;
+    }
+
+    private void addUnusedTransfers(List<Transfer> selectedTransfers, List<Transfer> unusedTransfers, int remainingWeight){
+
+
     }
 }
